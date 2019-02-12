@@ -24,7 +24,7 @@ while(cap.isOpened()):
     if not ret:
         break
 
-    pts = cv2.goodFeaturesToTrack(np.mean(frame, axis=2).astype(np.uint8), 3000, qualityLevel=0.01, minDistance=7)
+    pts = cv2.goodFeaturesToTrack(np.mean(frame, axis=2).astype(np.uint8), 3000, qualityLevel=0.01, minDistance=5) #mindist 7 used
 
     # extraction
     kps = [cv2.KeyPoint(x=f[0][0], y=f[0][1], _size=20) for f in pts]
@@ -38,9 +38,19 @@ while(cap.isOpened()):
 
     pointlocs = [k.pt for k in kp]
 
+    for match in matches:
+        if match.distance > 30:
+            break
+
+        pt1 = kp[match.queryIdx].pt
+        pt1 = (int(pt1[0]),int(pt1[1]))
+        pt2 = lastKp[match.trainIdx].pt
+        pt2 = (int(pt2[0]),int(pt2[1]))
+        cv2.line(frame,pt1,pt2,(0,255,0))
+
+    # output
     for point in pointlocs:
         cv2.circle(frame,(int(point[0]),int(point[1])),10,(0,0,255),1)
-
 
     cv2.imshow('frame',frame)
 
