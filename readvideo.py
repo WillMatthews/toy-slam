@@ -4,6 +4,14 @@ import numpy as np
 import cv2
 import math
 
+# TODO:
+# add a SIFT detector (maybe LIFT?)
+# develop a better match prune method
+# non brute force methods
+# COMMENTS!
+
+
+
 filename = 'test_countryroad.mp4'
 
 cap = cv2.VideoCapture('./videos/'+filename)
@@ -15,14 +23,14 @@ cv2.resizeWindow('SLAMView',600,600)
 
 orb = cv2.ORB_create()
 
-seq = 0
+seq = 1
 
 ret,frame = cap.read()
 lastKp, lastDes = orb.detectAndCompute(frame,None)
 
 while(cap.isOpened()):
     seq += 1
-    print(seq)
+    #print(seq)
     ret, frame = cap.read()
     if not ret:
         break
@@ -47,12 +55,16 @@ while(cap.isOpened()):
 
     goodMatchSeq = 0
     matchSeq = 0
+    pts1=[]
+    pts2=[]
     for match in matches:
         matchSeq += 1
         pt1 = kp[match.queryIdx].pt
-        pt1 = (int(pt1[0]),int(pt1[1]))
+        pts1.append(pt1)
+        ipt1 = (int(pt1[0]),int(pt1[1]))
         pt2 = lastKp[match.trainIdx].pt
-        pt2 = (int(pt2[0]),int(pt2[1]))
+        pts2.append(pt2)
+        ipt2 = (int(pt2[0]),int(pt2[1]))
 
         dist = math.sqrt( (pt1[0]-pt2[0])**2.0 + (pt1[1]-pt2[1])**2.0)
         #if match.distance > 30:
@@ -63,17 +75,16 @@ while(cap.isOpened()):
         if dist < 100:
             if match.distance < 30:
                 goodMatchSeq += 1
-                cv2.line(frame,pt1,pt2,(0,255,0),2)
+                cv2.line(frame,ipt1,ipt2,(0,255,0),2)
 
     # frame number and process stats to user
     cv2.putText(frame, filename, (30,30), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
-    printString = str(seq) + "/" + str(frameLength) + "   " + "{0:.2f}".format(100*seq/frameLength) + "%"
+    printString = str(seq) + "/" + str(frameLength) + "   " + "{0:.2f}".format(100*seq/frameLength) + "%" + " frame"
     cv2.putText(frame, printString, (30,60), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
     printString = str(goodMatchSeq) + "/" + str(matchSeq) + "   " + "{0:.2f}".format(100*goodMatchSeq/matchSeq) + "%" + " match pass rate"
     cv2.putText(frame, printString, (30,90), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
-        #cv2.line(frame,pt1,pt2,(0,255,0))
 
-    #
+
     # pts1 = []
     # pts2 = []
     # good = []
@@ -85,12 +96,13 @@ while(cap.isOpened()):
     #         pts1.append(kp[m.queryIdx].pt)
     #         pts2.append(lastKp[m.trainIdx].pt)
     #
-    # pts1 = np.int32(pts1)
-    # pts2 = np.int32(pts2)
+    pts1 = np.int32(pts1)
+    pts2 = np.int32(pts2)
+    print("FUNDAMENTAL MATRIX")
     #
-    # F, mask = cv2.findFundamentalMat(pts1,pts2,cv2.FM_LMEDS)
+    F, mask = cv2.findFundamentalMat(pts1,pts2,cv2.FM_LMEDS)
     #
-    # print(F)
+    print(F)
 
     cv2.imshow('SLAMView',frame)
 
