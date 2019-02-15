@@ -9,6 +9,14 @@ import math
 # develop a better match prune method
 # non brute force methods
 # COMMENTS!
+# add a kalman filter to estimate state!
+# add a camera calibration estimator
+# add a fundamental matrix to translation+rotation estimator
+
+## add a plant model!
+#    [x]   [
+# d  [y] = [ to be determined
+# dt [z]   [
 
 
 
@@ -59,30 +67,52 @@ while(cap.isOpened()):
     pts2=[]
     for match in matches:
         matchSeq += 1
+
+        # Process a single matched point pair
         pt1 = kp[match.queryIdx].pt
-        pts1.append(pt1)
-        ipt1 = (int(pt1[0]),int(pt1[1]))
+        pt1 = (int(pt1[0]),int(pt1[1]))
+
         pt2 = lastKp[match.trainIdx].pt
-        pts2.append(pt2)
-        ipt2 = (int(pt2[0]),int(pt2[1]))
+        pt2 = (int(pt2[0]),int(pt2[1]))
 
         dist = math.sqrt( (pt1[0]-pt2[0])**2.0 + (pt1[1]-pt2[1])**2.0)
-        #if match.distance > 30:
-        #    break
-        #if dist > 50:
-        #    break
 
         if dist < 100:
             if match.distance < 30:
                 goodMatchSeq += 1
-                cv2.line(frame,ipt1,ipt2,(0,255,0),2)
+                cv2.line(frame,pt1,pt2,(0,255,0),2)
+
+                # if the match is good - save it to the list for fundamental matrix calc
+                pts1.append(pt1)
+                pts2.append(pt2)
+
+    if goodMatchSeq < 10:
+        print("BAD MATCHES, this result may be unstable")
+        for match in matches:
+            # Process a single matched point pair
+            pt1 = kp[match.queryIdx].pt
+            pt1 = (int(pt1[0]),int(pt1[1]))
+
+            pt2 = lastKp[match.trainIdx].pt
+            pt2 = (int(pt2[0]),int(pt2[1]))
+
+            # if the match is good - save it to the list for fundamental matrix calc
+            pts1.append(pt1)
+            pts2.append(pt2)
+
 
     # frame number and process stats to user
     cv2.putText(frame, filename, (30,30), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
-    printString = str(seq) + "/" + str(frameLength) + "   " + "{0:.2f}".format(100*seq/frameLength) + "%" + " frame"
+
+    printString = str(seq) + "/" + str(frameLength)
+    pctString = "{0:.2f}".format(100*seq/frameLength) + "%" + " frame"
     cv2.putText(frame, printString, (30,60), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
-    printString = str(goodMatchSeq) + "/" + str(matchSeq) + "   " + "{0:.2f}".format(100*goodMatchSeq/matchSeq) + "%" + " match pass rate"
+    cv2.putText(frame, pctString, (230,60), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
+
+    printString = str(goodMatchSeq) + "/" + str(matchSeq)
+    pctString = "{0:.2f}".format(100*goodMatchSeq/matchSeq) + "%" + " match pass rate"
     cv2.putText(frame, printString, (30,90), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
+    cv2.putText(frame, pctString, (230,90), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
 
 
     # pts1 = []
