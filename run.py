@@ -12,29 +12,32 @@ import math
 # add a kalman filter to estimate state!
 # add a camera calibration estimator
 # add a fundamental matrix to translation+rotation estimator
+# add a good class structure to this mess somehow
 
 ## add a plant model!
 #    [x]   [
 # d  [y] = [ to be determined
 # dt [z]   [
 
-
+#def is_odd(a):
+#    return (a & 1) == 1
 
 filename = 'test_countryroad.mp4'
 
 cap = cv2.VideoCapture('./videos/'+filename)
 
 frameLength = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-cv2.namedWindow('SLAMView',cv2.WINDOW_NORMAL)
-cv2.resizeWindow('SLAMView',600,600)
-
 orb = cv2.ORB_create()
 
 seq = 1
+tickTock = True
 
 ret,frame = cap.read()
 lastKp, lastDes = orb.detectAndCompute(frame,None)
+height, width, _ = frame.shape
+
+cv2.namedWindow('SLAMView',cv2.WINDOW_NORMAL)
+cv2.resizeWindow('SLAMView',600,600)
 
 while(cap.isOpened()):
     seq += 1
@@ -63,8 +66,8 @@ while(cap.isOpened()):
 
     goodMatchSeq = 0
     matchSeq = 0
-    pts1=[]
-    pts2=[]
+    pts1 = []
+    pts2 = []
     for match in matches:
         matchSeq += 1
 
@@ -75,12 +78,19 @@ while(cap.isOpened()):
         pt2 = lastKp[match.trainIdx].pt
         pt2 = (int(pt2[0]),int(pt2[1]))
 
-        dist = math.sqrt( (pt1[0]-pt2[0])**2.0 + (pt1[1]-pt2[1])**2.0)
+        dist = math.sqrt((pt1[0]-pt2[0])**2.0 + (pt1[1]-pt2[1])**2.0)
 
-        if dist < 100:
+        if dist < 50:
             if match.distance < 30:
                 goodMatchSeq += 1
-                cv2.line(frame,pt1,pt2,(0,255,0),2)
+
+                #queryPoint = (width//2 - 2*(pt2[0]-width//2),height//2 - 2*(pt2[1]-height//2))
+                mF = 20
+                #farPoint = (pt2[0] + mF*(pt2[0]-pt1[0]), pt2[1] + mF*(pt2[1]-pt1[1]))
+
+                #cv2.line(frame,pt1,queryPoint,(0,255,0),1)
+                #cv2.line(frame,pt1,farPoint,(0,255,0),1)
+                cv2.line(frame,pt1,pt2,(128,255,0),2)
 
                 # if the match is good - save it to the list for fundamental matrix calc
                 pts1.append(pt1)
@@ -102,7 +112,8 @@ while(cap.isOpened()):
 
 
     # frame number and process stats to user
-    cv2.putText(frame, filename, (30,30), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
+    printString = filename + "   " + str(width) + "x" + str(height)
+    cv2.putText(frame, printString, (30,30), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
 
     printString = str(seq) + "/" + str(frameLength)
     pctString = "{0:.2f}".format(100*seq/frameLength) + "%" + " frame"
@@ -114,6 +125,16 @@ while(cap.isOpened()):
     cv2.putText(frame, printString, (30,90), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
     cv2.putText(frame, pctString, (230,90), cv2.FONT_HERSHEY_PLAIN, 2, (255,0,0),2)
 
+    col1 = (0,0,0)
+    col2 = (255,255,255)
+    if tickTock:
+        tickTock = False
+    else:
+        col1, col2 = col2, col1
+        tickTock = True
+
+    cv2.rectangle(frame, (width-20,0), (width,20), col1, -1)
+    cv2.rectangle(frame, (width-40,0), (width-20,20), col2, -1)
 
     # pts1 = []
     # pts2 = []
